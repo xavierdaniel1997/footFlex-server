@@ -15,7 +15,6 @@ const registerUser = async (req, res) => {
       !firstName ||
       !lastName ||
       !email ||
-      !phoneNumber ||
       !password ||
       !cPassword
     ) {
@@ -65,10 +64,11 @@ const registerUser = async (req, res) => {
 };
 
 const verifyOTP = async (req, res) => {
-    try{
+    
+    try{  
         const {otp} = req.body;
         const otpData = await OTP.findOne({otp})
-        if(!otpData){
+        if(!otpData){  
             return res.status(400).json({message: "Invalid OTP or OTP expired"})
         }
         await Users.updateOne({email: otpData.email}, {isVerified: true})
@@ -80,9 +80,10 @@ const verifyOTP = async (req, res) => {
     }
 }
 
-const resendOTP = async (req, res) => {
+const resendOTP = async (req, res) => {   
   try{
     const {email} = req.body;
+    console.log("otp detials", email) 
     const user = await Users.findOne({email: email, isVerified: false})
     if(!user){
       return res.status(400).json({message: "User not found or already vefified"})
@@ -114,7 +115,7 @@ const loginUser = async (req, res) => {
     if(!email || !password){
       return res.status(400).json({message: "All fields are required"})
     }
-    const userData = await Users.findOne({email})
+    const userData = await Users.findOne({email: email, isVerified: true})
     if(!userData){
       return res.status(401).json({message: "User not found"})
     }
@@ -133,4 +134,29 @@ const loginUser = async (req, res) => {
   }
 }
 
-export {registerUser, verifyOTP, resendOTP, loginUser};
+const verifyUser = async (req, res) => {
+  try{
+      const userId = req.user;
+      const userData = await Users.findById(userId.id).select("-password")
+      if(!userData){
+          return res.status(404).json({message: "user not found"})
+      }
+      console.log("frm getUser", userData)
+      return res.status(200).json({message: "success", user: userData});
+  }catch(error){
+      console.error(error)
+      res.status(500).json({message: "Failed to fetch the user"})
+  }
+
+};
+
+
+const logOutUser = async (req, res) => {
+  res.cookie("jwtToken", "", {
+    httpOnly: true,
+    expires: new Date(0)
+  })
+  res.status(200).json({message: "logout successfully"})
+}
+
+export {registerUser, verifyOTP, resendOTP, loginUser, logOutUser, verifyUser};
