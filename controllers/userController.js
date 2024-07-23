@@ -1,3 +1,4 @@
+import Category from "../models/categoryModel.js";
 import Users from "../models/userModel.js";
 
 const getUserDetials = async (req, res) => {
@@ -16,4 +17,5 @@ const getUserDetials = async (req, res) => {
   
 };
 
-export {getUserDetials}
+
+export {getUserDetials}   

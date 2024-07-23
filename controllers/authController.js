@@ -7,7 +7,6 @@ import {sendOTPByEmail} from "../utils/emailService.js";
 import { generateToken } from "../utils/genetateToken.js";
 
 const registerUser = async (req, res) => {
-  console.log("body", req.body);
   try {
     const {firstName, lastName, email, phoneNumber, password, cPassword, role} =
       req.body;

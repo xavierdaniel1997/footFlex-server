@@ -9,11 +9,19 @@ const isAuth = (req, res, next) => {
     try{
         const decoded = jwt.verify(token, process.env.SECRET_KEY)
         req.user = decoded
-        console.log("form mld", req.user)
         next()
     }catch(error){
         return res.status(401).json({ message: "Token is not valid" });
     }
 }
+
+
+const isAdminAuth = (req, res, next) => {
+    if(req.user && req.user.role){
+        next()
+    }else{
+        res.status(401).json({message: "Not autherized as an admin"})
+    }
+}
    
-export {isAuth}
+export {isAuth, isAdminAuth}
