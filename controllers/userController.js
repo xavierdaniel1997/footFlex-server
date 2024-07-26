@@ -8,7 +8,6 @@ const getUserDetials = async (req, res) => {
         if(!userData){
             return res.status(404).json({message: "user not found"})
         }
-        console.log("frm getUser", userData)
         return res.status(200).json({message: "success", user: userData});
     }catch(error){
         console.error(error)

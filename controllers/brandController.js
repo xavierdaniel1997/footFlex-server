@@ -4,14 +4,15 @@ import {uploadImage} from "../utils/imageUploadUtil.js";
 const addBrand = async (req, res) => {
   try {
     const {brandName, brandTitle, logo} = req.body;
+    console.log("form the brand conttroller", req.body)
     const logoUrl = await uploadImage(logo, "myBrand", 200, 200);
     console.log("this is form brandcontroll logUrl",logoUrl)
-    if (!brandName) {
-      return res.status(400).json({message: "brandName is required"});
-    }
+    if (!brandName) {  
+      return res.status(400).json({message: "brandName is required"});     
+    }  
     const existingBrandName = await Brands.findOne({brandName});
     if (existingBrandName) {
-      return res.status(400).json({message: "Existing Brand"});
+      return res.status(400).json({message: "Existing Brand"});   
     }
     const brand = new Brands({
       brandName,

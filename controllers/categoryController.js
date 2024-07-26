@@ -45,10 +45,13 @@ const updateCategory = async (req, res) => {
     if (!category) {
       return res.status(400).json({message: "category not founded"});
     }
+    const existingCategory = await Category.findOne({ categoryName, _id: { $ne: id } });
+    if (existingCategory) {
+      return res.status(400).json({ message: "Existing category" });
+    }
 
     const categoryData = await Category.findByIdAndUpdate(id, {
-      categoryName,
-      description,
+      categoryName, 
       status,
     });
 
