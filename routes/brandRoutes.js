@@ -5,6 +5,6 @@ import { addBrand, getBrand } from "../controllers/brandController.js";
 const router = express.Router();
 
 router.post("/addNewBrand", isAuth, isAdminAuth, addBrand);
-router.get("/getAllBrands", isAuth, isAdminAuth, getBrand)
+router.get("/getAllBrands", getBrand)
 
 export default router;

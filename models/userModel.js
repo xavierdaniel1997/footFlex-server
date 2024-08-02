@@ -19,6 +19,10 @@ const userSchema = mongoose.Schema(
       type: Number,
       required: false,
     },
+    dpImage: {
+      type: String,
+      required: false,
+    },
     addresses: [
       {
         phone: {
@@ -62,7 +66,7 @@ const userSchema = mongoose.Schema(
     },
   },
   {
-    timeStamps: true,
+    timestamps: true,
   }
 );
 

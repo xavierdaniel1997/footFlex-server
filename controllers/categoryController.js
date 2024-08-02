@@ -52,6 +52,7 @@ const updateCategory = async (req, res) => {
 
     const categoryData = await Category.findByIdAndUpdate(id, {
       categoryName, 
+      description,
       status,
     });
 
