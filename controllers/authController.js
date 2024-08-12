@@ -126,7 +126,9 @@ const loginUser = async (req, res) => {
       return res.status(400).json({message: "User is not verified"})
     }
     generateToken(res, userData)
-    return res.status(200).json({message : "Login successfully", userData: userData})
+    const userDataWithoutPassword = { ...userData.toObject() };
+    delete userDataWithoutPassword.password;
+    return res.status(200).json({message : "Login successfully", userData: userDataWithoutPassword})
   }catch(error){
     console.log(error)
     return res.status(500).json({message: "Login failed"})

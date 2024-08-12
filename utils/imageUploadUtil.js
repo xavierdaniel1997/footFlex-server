@@ -31,4 +31,14 @@ const uploadMultipleImages = async (images, folder, width, height) => {
   }
 };
 
-export {uploadImage, uploadMultipleImages};
+
+const deleteImage = async (imageUrl) => {
+  try {
+    const publicId = imageUrl.split('/').pop().split('.')[0];
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.error('Error deleting image from Cloudinary:', error);
+  }
+};
+
+export {uploadImage, uploadMultipleImages, deleteImage};

@@ -25,31 +25,42 @@ const userSchema = mongoose.Schema(
     },
     addresses: [
       {
-        phone: {
+        customerName : {
           type: String,
         },
-        street: {
+        phone: {
+          type: Number,
+          required: true,
+        },
+        address: {
           type: String,
+          required: true,
+        },
+        locality: {
+          type: String,
+          required: true,
         },
         city: {
           type: String,
+          required: true,
         },
         state: {
           type: String,
+          required: true,
         },
-        zipCode: {
+        pinCode: {
           type: Number,
         },
         typeofPlace: {
           type: String,
-          enum: ["Home", "Work"],
-          default: "Home",
+          enum: ["home", "work"],    
+          default: "home",
         },
         isDefaultAddress: {
           type: Boolean,
           default: false,
         },
-      },
+      },                                    
     ],
     password: {
       type: String,
