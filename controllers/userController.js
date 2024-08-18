@@ -97,10 +97,12 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
+
+
 // address section
 
 const addNewAddress = async (req, res) => {
-  console.log("this is req body addres", req.body);
   try {
     const userId = req.user.id;
     const {
@@ -134,21 +136,36 @@ const addNewAddress = async (req, res) => {
     if (!user) {
       return res.status(404).json({message: "User not found"});
     }
-    user.addresses.push({
-      customerName,
-      phone,
-      address,
-      locality,
-      city,
-      state,
-      pinCode,
-      typeofPlace: normalizedTypeofPlace,
-      isDefaultAddress,
-    });
 
     if (isDefaultAddress) {
       user.addresses.forEach((address) => (address.isDefaultAddress = false));
     }
+    if (user.addresses.length === 0) {
+      user.addresses.push({
+        customerName,
+        phone,
+        address,
+        locality,
+        city,
+        state,
+        pinCode,
+        typeofPlace: normalizedTypeofPlace,
+        isDefaultAddress: true,
+      });
+    } else {
+      user.addresses.push({
+        customerName,
+        phone,
+        address,
+        locality,
+        city,
+        state,
+        pinCode,
+        typeofPlace: normalizedTypeofPlace,
+        isDefaultAddress,
+      });
+    }
+
     await user.save();
     return res.status(200).json({message: "Address added successfully", user});
   } catch (error) {
@@ -180,18 +197,99 @@ const removeAddress = async (req, res) => {
   try {
     const userId = req.user.id;
     const {addressId} = req.params;
-    
+
     const user = await Users.findByIdAndUpdate(
       userId,
-      { $pull: { addresses: { _id: addressId } } },
-      { new: true } 
+      {$pull: {addresses: {_id: addressId}}},
+      {new: true}
     );
-    return res.status(200).json({ message: "Address removed successfully" });
+    return res.status(200).json({message: "Address removed successfully"});
   } catch (error) {
     console.log(error);
     return res.status(500).json({message: "Something went wrong"});
   }
 };
+
+const setDefaultAddress = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {addressId} = req.params;
+
+    const user = await Users.findById(userId);
+    if (!user) {
+      return res.status(404).json({message: "User not found"});
+    }
+
+    user.addresses.forEach((address) => {
+      address.isDefaultAddress = false;
+    });
+
+    const address = user.addresses.id(addressId);
+    if (!address) {
+      return res.status(404).json({message: "Address not found"});
+    }
+    address.isDefaultAddress = true;
+    await user.save();
+
+    res.status(200).json({
+      message: "Default address updated successfully",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message: "Something went wrong"});
+  }
+};
+
+const updateAddress = async (req, res) => {
+  try{
+    const userId = req.user.id;
+    const {addressId} = req.params;
+    const {
+      customerName,
+      phone,
+      address,
+      locality,
+      city,
+      state,
+      pinCode,
+      typeofPlace,
+      isDefaultAddress,
+    } = req.body;
+
+    const user = await Users.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const addressToUpdate = user.addresses.id(addressId);
+    if (!addressToUpdate) {
+      return res.status(404).json({ message: "Address not found" });
+    }  
+
+    const normalizedTypeofPlace = typeofPlace.toLowerCase();
+
+    if (isDefaultAddress) {
+      user.addresses.forEach((addr) => (addr.isDefaultAddress = false));
+    }
+
+    addressToUpdate.customerName = customerName || addressToUpdate.customerName;
+    addressToUpdate.phone = phone || addressToUpdate.phone;
+    addressToUpdate.address = address || addressToUpdate.address ;
+    addressToUpdate.locality = locality || addressToUpdate.locality;
+    addressToUpdate.city = city || addressToUpdate.city;                 
+    addressToUpdate.state = state || addressToUpdate.state;
+    addressToUpdate.pinCode = pinCode || addressToUpdate.pinCode;
+    addressToUpdate.typeofPlace = normalizedTypeofPlace || addressToUpdate.typeofPlace;
+    addressToUpdate.isDefaultAddress = isDefaultAddress;
+
+    await user.save();
+    return res.status(200).json({message: "Updated Successfully", user})
+  }catch(error){
+    console.log(error)
+    return res.status(500).json({message: "Something went wrong"})
+  }
+}
 
 export {
   getUserDetials,
@@ -202,4 +300,6 @@ export {
   addNewAddress,
   getAddressDetials,
   removeAddress,
+  setDefaultAddress,
+  updateAddress
 };

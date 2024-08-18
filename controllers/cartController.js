@@ -87,18 +87,10 @@ const updateCart = async (req, res) => {
     const itemIndex = cart.items.findIndex(
       (item) => item.productId.toString() === productId 
     );
-
-
-    // if(itemIndex > -1){
-    //   if(size)cart.items[itemIndex].size = size;
-    //   if(quantity)cart.items[itemIndex].quantity = quantity;
-    // }else{
-    //   cart.items.push({productId, size, quantity})
-    // }   
+  
     if (itemIndex > -1) {
       if (size) cart.items[itemIndex].size = size;                    
       if (quantity !== undefined) {
-        // Convert quantity to a number and ensure it's at least 1
         cart.items[itemIndex].quantity = Math.max(1, Number(quantity));
       }
     } else {
@@ -128,4 +120,32 @@ const updateCart = async (req, res) => {
   }
 };
 
-export {addToCart, getCartDetails, removeFromCart, updateCart};     
+const clearCart = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const cart = await Cart.findOneAndUpdate(
+      { user: userId },
+      { $set: { items: [] } },
+      { new: true } 
+    );
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
+    }
+
+    return res.status(200).json({
+      message: "Cart cleared successfully",
+      cart: cart
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to clear cart" });
+  }
+};
+
+
+       
+
+export {addToCart, getCartDetails, removeFromCart, updateCart, clearCart};     

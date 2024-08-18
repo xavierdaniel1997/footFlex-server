@@ -28,4 +28,4 @@ app.use("/api", appRoutes)
 
 app.listen(PORT, () => {
     console.log(`server start running at ${PORT}`)
-}) 
+})             

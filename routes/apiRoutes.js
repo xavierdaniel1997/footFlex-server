@@ -4,7 +4,8 @@ import categoryRoute from "./categoryRoutes.js";
 import brandRoute from "./brandRoutes.js"
 import productRoute from "./productRoutes.js";
 import wishListRoute from "./wishListRoutes.js";
-import cartRouter from "./cartRoutes.js"
+import cartRouter from "./cartRoutes.js";
+import orderRouter from "./orderRoutes.js";
 const app = express.Router()
 
 app.use("/users", userRoute)
@@ -13,5 +14,6 @@ app.use("/brand", brandRoute)
 app.use("/product", productRoute)
 app.use("/cart", cartRouter)
 app.use("/wishList", wishListRoute)
+app.use("/order", orderRouter)
 
 export default app;   

@@ -75,5 +75,13 @@ const deletCategoryById = async (req, res) => {
     return res.status(500).json({message: "Something went wrong"});
   }
 };
+
+const verifyProductInCart = async (req, res) => {
+  try{
+
+  }catch(error){
+    console.log(error)
+  }
+}
  
 export {createCategory, getAllCategory, updateCategory, deletCategoryById};

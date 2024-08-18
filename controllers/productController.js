@@ -1,4 +1,5 @@
 import Products from "../models/productModel.js";
+import mongoose from "mongoose";
 import {uploadImage, uploadMultipleImages} from "../utils/imageUploadUtil.js";
 
 const createProduct = async (req, res) => {
@@ -250,36 +251,17 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+
+
 export {
   createProduct,
   getProducts,
   getProductsToAdmin,
   updateProduct,
-  deleteProduct,
+  deleteProduct, 
   getProductById,
   blockProduct,
   getProductByGender,
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

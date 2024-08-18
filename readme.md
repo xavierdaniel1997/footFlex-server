@@ -1,42 +1,55 @@
-// controllers/cartController.js
+import Order from '../models/Order.js';
+import Product from '../models/Product.js';
+import Cart from '../models/Cart.js';
 
-const updateCartItem = async (req, res) => {
+export const createOrder = async (req, res) => {
   try {
-    const { productId } = req.params;
-    const { size, quantity } = req.body;
-    const userId = req.user.id;
-    
-    const cart = await Cart.findOne({ user: userId });
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-    
-    const item = cart.items.find(item => item.productId.toString() === productId && item.size === size);
-    if (!item) {
-      return res.status(404).json({ message: "Item not found in cart" });
-    }
-    
-    const product = await Products.findById(productId);
-    if (!product) {
-      return res.status(400).json({ message: "Product not found" });
-    }
-    
-    if (product.stock < quantity) {
-      return res.status(400).json({ message: "Insufficient stock" });
+    const { items, address, totalPrice, payment } = req.body;
+    const userId = req.user.id; // Assuming you're using authentication middleware
+
+    // Validate input
+    if (!items || !address || !totalPrice || !payment) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    item.quantity = quantity;
-    await cart.save();
-    
-    return res.status(200).json({ message: "Cart item updated", cart });
+    // Check stock and update product quantities
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        return res.status(404).json({ message: `Product ${item.product} not found` });
+      }
+      if (product.stock < item.quantity) {
+        return res.status(400).json({ message: `Insufficient stock for product ${product.productName}` });
+      }
+      product.stock -= item.quantity;
+      
+      // Update size-specific stock
+      const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
+      if (sizeIndex !== -1) {
+        product.sizes[sizeIndex].stock -= item.quantity;
+      }
+      
+      await product.save();
+    }
+
+    // Create new order
+    const newOrder = new Order({
+      user: userId,
+      items,
+      address,
+      totalPrice,
+      payment,
+      status: 'Pending'
+    });
+
+    const savedOrder = await newOrder.save();
+
+    // Clear the user's cart
+    await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
+
+    res.status(201).json({ message: 'Order created successfully', order: savedOrder });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Failed to update cart item" });
+    console.error('Order creation error:', error);
+    res.status(500).json({ message: 'Error creating order', error: error.message });
   }
 };
-
-// Add this route to your routes file
-// routes/cartRoutes.js
-import { updateCartItem } from '../controllers/cartController.js';
-
-router.patch('/cart/:productId', updateCartItem);

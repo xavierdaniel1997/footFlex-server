@@ -8,4 +8,4 @@ export const generateToken = (res, user) => {
         secure: process.env.NODE_ENV === "production",
         maxAge : 60*60*1000
     })
-}
+} 
