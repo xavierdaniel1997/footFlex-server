@@ -17,7 +17,7 @@ const getUserDetials = async (req, res) => {
   }
 };
 
-const getAllUser = async (req, res) => {
+const getAllUser = async (req, res) => { 
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;

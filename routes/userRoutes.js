@@ -1,5 +1,5 @@
 import express from "express";
-import { loginUser, logOutUser, registerUser, resendOTP, verifyOTP, verifyUser } from "../controllers/authController.js";
+import { googleLogin, loginUser, logOutUser, registerUser, resendOTP, verifyOTP, verifyUser } from "../controllers/authController.js";
 import { isAdminAuth, isAuth } from "../middleware/isAuth.js";
 import { addNewAddress, blockUser, deleteUser, getAddressDetials, getAllUser, getUserDetials, removeAddress, setDefaultAddress, updateAddress, updateUserDetials } from "../controllers/userController.js";
 
@@ -11,6 +11,7 @@ router.post("/resend-otp", resendOTP)
 router.post("/login", loginUser)
 router.post("/logout", logOutUser)  
 router.get("/verify", isAuth, verifyUser)
+router.post("/google-login", googleLogin);
 
 
 //user routes

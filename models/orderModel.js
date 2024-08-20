@@ -16,6 +16,7 @@ const addressSchema = new Schema({
 const orderItemSchema = new Schema({
   product: {type: Schema.Types.ObjectId, ref: "Products", required: true}, 
   productName: {type: String, required: true},
+  productBrand: {type: String, required: true},
   description: {type: String, required: true},
   price: {type: Number, required: true},
   regularPrice: {type: Number, required: true},
@@ -49,7 +50,7 @@ const paymentSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ["Pending", "Completed", "Failed", "Refunded", "Partially Refunded"],
+    enum: ["Pending", "Completed", "Failed", "Refunded"],
     default: "Pending",
   }, 
   transactionId: {type: String},
