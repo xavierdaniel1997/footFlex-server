@@ -6,7 +6,7 @@ import { isAdminAuth, isAuth } from "../middleware/isAuth.js";
 const router = express.Router()
 
 router.post("/createCategory", isAuth, isAdminAuth, createCategory)
-router.get("/getCategorys", isAuth, getAllCategory)
+router.get("/getCategorys", getAllCategory)
 router.put("/updateCategory/:id", isAuth, isAdminAuth, updateCategory)
 router.delete("/deleteCategory/:id", isAuth, isAdminAuth, deletCategoryById)
 

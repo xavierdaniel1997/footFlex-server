@@ -150,7 +150,7 @@ const updateOrderStatus = async (req, res) => {
       }
       order.status = orderStatus;
     }
-
+       
     if (paymentStatus) {
       if (!order.schema.path('payment.status').enumValues.includes(paymentStatus)) {
         return res.status(400).json({ message: "Invalid payment status" });
