@@ -1,6 +1,7 @@
 
 import Products from '../models/productModel.js'; 
 import mongoose from 'mongoose';
+import { calculateOfferPrice } from '../utils/calculateOfferPrice.js';
 
 const getFilteredProducts = async (req, res) => {
   // console.log("this is frm the getFilteredProducts", req.query)  
@@ -26,16 +27,6 @@ const getFilteredProducts = async (req, res) => {
     }
 
 
-    // if (prices) {
-    //   const priceConditions = prices.split(',').map(priceRange => {
-    //     const [min, max] = priceRange.replace('Rs. ', '').split(' to ').map(Number);
-    //     return { salePrice: { $gte: min, $lte: max } };
-    //   });
-
-    //   if (priceConditions.length > 0) {
-    //     query.$or = priceConditions;
-    //   }
-    // }
 
     let sortOption = {};
     if (sort === 'High to Low') {
@@ -55,13 +46,31 @@ const getFilteredProducts = async (req, res) => {
     console.log("query", query)
     const filteredProducts = await Products.find(query)
       .populate('category brand')
+      .populate("offer")
+      .populate({
+        path: "category", 
+        populate: { path: "offer" }
+      })
       .sort(sortOption)
       .exec();
     
 
+      const results = filteredProducts.map(product => {
+        const productOffer = product.offer?.discountPercentage || 0;
+        const categoryOffer = product.category?.offer?.discountPercentage || 0;
+        const offerExpirationDate = product.offer?.endDate || product.category?.offer?.endDate;
+        const priceDetails = calculateOfferPrice(product.salePrice, productOffer, categoryOffer, offerExpirationDate);  
+        return {
+          ...product.toObject(),
+          ...priceDetails,
+          offerValid: priceDetails.offerPercentage > 0
+        };
+      });
+
+      
     return res.status(200).json({
       message: "Products fetched successfully", 
-      products: filteredProducts,                        
+      products: results,                        
     });   
   } catch (error) {
     console.error(error);      

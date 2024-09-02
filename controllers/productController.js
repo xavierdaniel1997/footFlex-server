@@ -1,5 +1,5 @@
 import Products from "../models/productModel.js";
-import mongoose from "mongoose";
+import {calculateOfferPrice} from "../utils/calculateOfferPrice.js";
 import {uploadImage, uploadMultipleImages} from "../utils/imageUploadUtil.js";
 
 const createProduct = async (req, res) => {
@@ -73,11 +73,36 @@ const getProducts = async (req, res) => {
     const products = await Products.find({})
       .populate("category")
       .populate("brand")
+      .populate("offer")
+      .populate({
+        path: "category",
+        populate: {path: "offer"},
+      })
       .sort({
         createdAt: -1,
       })
       .limit(12);
-    return res.status(200).json({message: "Success", products: products});
+
+    const results = products.map((product) => {
+      const productOffer = product.offer?.discountPercentage || 0;
+      const categoryOffer = product.category?.offer?.discountPercentage || 0;
+      const offerExpirationDate =
+        product.offer?.endDate || product.category?.offer?.endDate;
+      // console.log("this is from the getproduct offerExpirationDate", offerExpirationDate)
+      const priceDetails = calculateOfferPrice(
+        product.salePrice,
+        productOffer,
+        categoryOffer,
+        offerExpirationDate
+      );
+      return {
+        ...product.toObject(),
+        ...priceDetails,
+        offerValid: priceDetails.offerPercentage > 0,
+      };
+    });
+
+    return res.status(200).json({message: "Success", products: results});
   } catch (error) {
     return res.status(500).json({message: "Failed to fetch product detials"});
   }
@@ -93,6 +118,10 @@ const getProductsToAdmin = async (req, res) => {
     const products = await Products.find({})
       .populate("category")
       .populate("brand")
+      .populate({
+        path: "category",
+        populate: {path: "offer"},
+      })
       .sort({
         createdAt: -1,
       })
@@ -113,17 +142,41 @@ const getProductsToAdmin = async (req, res) => {
 const getProductByGender = async (req, res) => {
   try {
     const {gender} = req.query;
-    const query = gender ? {gender} : {};                                                            
+    const query = gender ? {gender} : {};
     const products = await Products.find(query)
       .populate("category")
       .populate("brand")
+      .populate("offer")
+      .populate({
+        path: "category",
+        populate: {path: "offer"},
+      })
       .sort({createdAt: -1});
     if (!products) {
       return res.status(400).json({message: "No item founded"});
     }
+
+    const results = products.map((product) => {
+      const productOffer = product.offer?.discountPercentage || 0;
+      const categoryOffer = product.category?.offer?.discountPercentage || 0;
+      const offerExpirationDate =
+        product.offer?.endDate || product.category?.offer?.endDate;
+      const priceDetails = calculateOfferPrice(
+        product.salePrice,
+        productOffer,
+        categoryOffer,
+        offerExpirationDate
+      );
+      return {
+        ...product.toObject(),
+        ...priceDetails,
+        offerValid: priceDetails.offerPercentage > 0,
+      };
+    });
+
     return res
       .status(200)
-      .json({message: "Product fetch successfully", products: products});
+      .json({message: "Product fetch successfully", products: results});
   } catch (error) {
     console.log(error);
     return res
@@ -137,13 +190,39 @@ const getProductById = async (req, res) => {
     const {id} = req.params;
     const productDetial = await Products.findById(id)
       .populate("category")
-      .populate("brand");
+      .populate("brand")
+      .populate("offer")
+      .populate({
+        path: "category",
+        populate: {path: "offer"},
+      });
     if (!productDetial) {
       return res.status(400).json({message: "Product not found"});
     }
+
+    // console.log("this is from the product get by id", productDetial)
+
+    const productOffer = productDetial.offer?.discountPercentage || 0;
+    const categoryOffer =
+      productDetial.category?.offer?.discountPercentage || 0;
+    const offerExpirationDate =
+      productDetial.offer?.endDate || productDetial.category?.offer?.endDate;
+    const priceDetails = calculateOfferPrice(
+      productDetial.salePrice,
+      productOffer,
+      categoryOffer,
+      offerExpirationDate
+    );
+
+    // console.log("this is from the product get by id", priceDetails); 
     return res
       .status(200)
-      .json({message: "Product fetch successfully", productDetial});
+      .json({
+        message: "Product fetch successfully",
+        productDetial,
+        ...priceDetails,
+        offerValid: priceDetails.offerPercentage > 0,
+      });
   } catch (error) {
     return res.status(500).json({message: "Failed to get the product"});
   }
@@ -164,10 +243,13 @@ const updateProduct = async (req, res) => {
       regularPrice,
       salePrice,
       sizes,
-      status,   
+      status,
     } = req.body;
 
-    console.log("this is from the product controller checking the galleryImages", galleryImages)
+    console.log(
+      "this is from the product controller checking the galleryImages",
+      galleryImages
+    );
     const product = await Products.findById(id);
     if (!product) {
       return res.status(400).json({message: "Product not found"});
@@ -194,7 +276,6 @@ const updateProduct = async (req, res) => {
       );
     }
 
-
     if (galleryImages) {
       try {
         const uploadedImages = await uploadMultipleImages(
@@ -207,17 +288,18 @@ const updateProduct = async (req, res) => {
         product.gallery = uploadedImages;
       } catch (error) {
         console.error("Error uploading gallery images:", error);
-        return res.status(500).json({ message: "Error uploading gallery images" });
+        return res
+          .status(500)
+          .json({message: "Error uploading gallery images"});
       }
     }
-                 
 
     const updatedProduct = await product.save();
     return res
       .status(200)
       .json({message: "Updated Successfully", product: updatedProduct});
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({message: "Something went wrong"});
   }
 };
@@ -251,17 +333,32 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-
+const getAllProducts = async (req, res) => {
+  try {
+    const products = await Products.find({})
+      .populate("category")
+      .populate("brand")
+      .populate({
+        path: "category",
+        populate: {path: "offer"},
+      })
+      .sort({
+        createdAt: -1,
+      });
+    return res.status(200).json({message: "Success", products: products});
+  } catch (error) {
+    return res.status(500).json({message: "Failed to fetch product detials"});
+  }
+};
 
 export {
   createProduct,
   getProducts,
   getProductsToAdmin,
   updateProduct,
-  deleteProduct, 
+  deleteProduct,
   getProductById,
   blockProduct,
   getProductByGender,
+  getAllProducts,
 };
-
-

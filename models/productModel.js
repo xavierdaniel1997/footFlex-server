@@ -21,7 +21,7 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     gender: {
-      type: String, 
+      type: String,
       enum: ["Men", "Women", "Kids"],
       required: true,
     },
@@ -33,7 +33,11 @@ const productSchema = new mongoose.Schema(
     salesPrice: {
       type: Number,
     },
-    salePrice: { type: Number, required: true },
+    salePrice: {type: Number, required: true},
+    offer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Offer",
+    },
     sizes: [
       {
         size: String,
@@ -51,8 +55,8 @@ const productSchema = new mongoose.Schema(
     ],
     status: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
     timestamps: true,

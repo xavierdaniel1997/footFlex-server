@@ -7,6 +7,7 @@ import wishListRoute from "./wishListRoutes.js";
 import cartRouter from "./cartRoutes.js";
 import orderRouter from "./orderRoutes.js";
 import couponRouter from "./couponRoutes.js";
+import offerRouter from "./offerRoutes.js";
 const app = express.Router()
 
 app.use("/users", userRoute)
@@ -17,5 +18,6 @@ app.use("/cart", cartRouter)
 app.use("/wishList", wishListRoute)
 app.use("/order", orderRouter)
 app.use("/coupons", couponRouter)
+app.use("/offers", offerRouter)
 
 export default app;   
