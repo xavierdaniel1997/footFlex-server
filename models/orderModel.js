@@ -10,17 +10,17 @@ const addressSchema = new Schema({
   city: {type: String, required: true},
   state: {type: String, required: true},
   pinCode: {type: Number, required: true},
-  typeofPlace: {type: String, required: true}, 
+  typeofPlace: {type: String, required: true},
 });
-    
+
 const orderItemSchema = new Schema({
-  product: {type: Schema.Types.ObjectId, ref: "Products", required: true}, 
+  product: {type: Schema.Types.ObjectId, ref: "Products", required: true},
   productName: {type: String, required: true},
   productBrand: {type: String, required: true},
   description: {type: String, required: true},
   price: {type: Number, required: true},
   regularPrice: {type: Number, required: true},
-  offerPrice: {type: Number}, 
+  offerPrice: {type: Number},
   quantity: {type: Number, required: true, min: 1},
   size: {type: String, required: true},
   totalPrice: {type: Number, required: true},
@@ -29,6 +29,7 @@ const orderItemSchema = new Schema({
     type: String,
     enum: [
       "Active",
+      "Delivered",
       "Cancelled",
       "Return Requested",
       "Return Accepted",
@@ -52,26 +53,46 @@ const paymentSchema = new Schema({
     type: String,
     enum: ["Pending", "Completed", "Failed", "Refunded"],
     default: "Pending",
-  }, 
+  },
   transactionId: {type: String},
 });
 
-
-const orderSchema = new Schema({
-    user: { type: Schema.Types.ObjectId, ref: 'Users', required: true },
+const orderSchema = new Schema(
+  {
+    user: {type: Schema.Types.ObjectId, ref: "Users", required: true},
     items: [orderItemSchema],
-    address: { type: addressSchema, required: true },
-    totalPrice: { type: Number, required: true },
+    address: {type: addressSchema, required: true},
+    totalPrice: {type: Number, required: true},
+
+
+    originalTotalPrice: {type: Number},
+    totalPriceAfterDiscount: {type: Number},
+    savedTotal: {type: Number},
+    couponDiscount: {type: Number, default: 0},
+    finalPrice: {type: Number},
+
+
     status: {
       type: String,
-      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Partially Cancelled', 'Partially Returned'],
-      default: 'Pending',
+      enum: [
+        "Pending",
+        "Processing",
+        "Shipped",
+        "Delivered",
+        "Cancelled",
+        "Returned",
+        "Partially Cancelled",
+        "Partially Returned",
+      ],
+      default: "Pending",
     },
-    payment: { type: paymentSchema, required: true },
-  }, {
+    payment: {type: paymentSchema, required: true},
+  },
+  {
     timestamps: true,
-  });
+  }
+);
 
-  const Order = mongoose.model("Order", orderSchema);
+const Order = mongoose.model("Order", orderSchema);
 
-  export default Order;
+export default Order;

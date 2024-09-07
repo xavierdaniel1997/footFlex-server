@@ -23,7 +23,11 @@ const cartSchema = new mongoose.Schema({
         ref: "Users",
         required: true
     },
-    items: [cartItemSchema]
+    items: [cartItemSchema],
+    couponDiscount: {
+        type: Number,
+        default: 0,
+    },
 })
 
 const Cart = mongoose.model("Cart", cartSchema);

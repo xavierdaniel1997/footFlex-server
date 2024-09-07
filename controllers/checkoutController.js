@@ -5,6 +5,7 @@ import Coupon from "../models/couponModel.js";
 const calculateCheckout = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { couponId } = req.body;
     const cart = await Cart.findOne({ user: userId }).populate({
       path: "items.productId",
       populate: [
@@ -28,6 +29,7 @@ const calculateCheckout = async (req, res) => {
     let originalTotalPrice = 0;
     let totalPriceAfterDiscount = 0;
     let savedTotal = 0;
+    let couponDiscount = 0;
 
     cart?.items?.forEach((item) => {
       const product = item.productId;
@@ -56,15 +58,30 @@ const calculateCheckout = async (req, res) => {
 
     let finalPrice = totalPriceAfterDiscount;
 
-    if(couponCode){
-      const coupon = await Coupon.findOne({ couponCode, status: true });
+    if(couponId){ 
+      const coupon = await Coupon.findById(couponId);
+      if (!coupon || !coupon.status || new Date() < coupon.startDate || new Date() > coupon.endDate) {
+        return res.status(400).json({ message: "Invalid or expired coupon" });    
+      }    
+
+      const discountAmount = (finalPrice * coupon.discount) / 100;
+      const finalDiscountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
+      finalPrice -= finalDiscountAmount;
+      finalPrice = Math.max(finalPrice, 0);
+      couponDiscount = finalDiscountAmount
+      cart.couponDiscount = couponDiscount;
+
     }
+   
+    await cart.save();
 
-
+                          
     return res.status(200).json({
       originalTotalPrice,
-      totalPriceAfterDiscount,
+      totalPriceAfterDiscount, 
       savedTotal,
+      couponDiscount: cart.couponDiscount,
+      finalPrice
     });
   } catch (error) {
     console.log(error);

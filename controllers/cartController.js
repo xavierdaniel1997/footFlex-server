@@ -79,8 +79,6 @@ const getCartDetails = async (req, res) => {
         offerValid: priceDetails.offerPercentage > 0,
       };
     });
-        
-    console.log("this is frm the cart getting", results) 
 
     return res.status(200).json({cart: {
       ...cart.toObject(),

@@ -1,88 +1,114 @@
-import Cart from "../models/cartModel.js";
-import Coupon from "../models/couponModel.js";
-import { calculateOfferPrice } from "../utils/calculateOfferPrice.js";
+// server.js or app.js
+import express from 'express';
+import { generateSalesReport, downloadSalesReportPDF, downloadSalesReportExcel } from './controllers/salesController.js';
 
-const calculateCheckout = async (req, res) => {
+const app = express();
+
+// ... other middleware and routes ...
+
+app.get('/api/sales-report', generateSalesReport);
+app.get('/api/sales-report/pdf', downloadSalesReportPDF);
+app.get('/api/sales-report/excel', downloadSalesReportExcel);
+
+// salesController.js
+import { generateReport } from "../utils/generateReport.js";
+import PDFDocument from 'pdfkit';
+import ExcelJS from 'exceljs';
+
+// ... existing generateSalesReport function ...
+
+export const downloadSalesReportPDF = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { selectedCouponId } = req.body; // Get selected coupon ID from request body
+    const { filter, fromDate, toDate } = req.query;
+    const { startDate, endDate } = calculateDateRange(filter, fromDate, toDate);
+    const report = await generateReport(startDate, endDate);
 
-    const cart = await Cart.findOne({ user: userId }).populate({
-      path: "items.productId",
-      populate: [
-        { path: "brand" },
-        { path: "offer" },
-        {
-          path: "category",
-          model: "Category",
-          populate: {
-            path: "offer",
-            model: "Offer",
-          },
-        },
-      ],
+    const doc = new PDFDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=sales_report.pdf');
+
+    doc.pipe(res);
+
+    doc.fontSize(18).text('Sales Report', { align: 'center' });
+    doc.moveDown();
+
+    // Add summary
+    doc.fontSize(14).text('Summary');
+    doc.fontSize(12).text(`Total Revenue: $${report.summary.totalRevenue.toFixed(2)}`);
+    doc.text(`Total Quantity: ${report.summary.totalQuantity}`);
+    doc.text(`Total Orders: ${report.summary.totalOrders}`);
+    doc.moveDown();
+
+    // Add daily data
+    doc.fontSize(14).text('Daily Data');
+    report.dailyData.forEach(day => {
+      doc.fontSize(12).text(`Date: ${day.date}`);
+      doc.text(`Revenue: $${day.revenue.toFixed(2)}`);
+      doc.text(`Quantity: ${day.quantity}`);
+      doc.text(`Order Count: ${day.orderCount}`);
+      doc.moveDown();
     });
 
-    if (!cart) {
-      return res.status(400).json({ message: "Cart items not found" });
-    }
-
-    let originalTotalPrice = 0;
-    let priceAfterDiscount = 0;
-    let savedTotal = 0;
-
-    cart.items.forEach((item) => {
-      const product = item.productId;
-      const productOffer = product?.offer?.discountPercentage || 0;
-      const categoryOffer = product?.category?.offer?.discountPercentage || 0;
-      const offerExpirationDate = product?.offer?.endDate || product?.category?.offer?.endDate;
-
-      const priceDetails = calculateOfferPrice(
-        product.salePrice,
-        productOffer,
-        categoryOffer,
-        offerExpirationDate
-      );
-
-      const originalPrice = product.salePrice * item.quantity;
-      const discountedPrice = priceDetails.discountedPrice * item.quantity;
-      const discount = originalPrice - discountedPrice;
-
-      originalTotalPrice += originalPrice;
-      priceAfterDiscount += discountedPrice;
-      savedTotal += discount;
+    // Add top products
+    doc.fontSize(14).text('Top Products');
+    report.topProducts.forEach(product => {
+      doc.fontSize(12).text(`Product: ${product.productName}`);
+      doc.text(`Brand: ${product.productBrand}`);
+      doc.text(`Total Revenue: $${product.totalRevenue.toFixed(2)}`);
+      doc.text(`Total Quantity: ${product.totalQuantity}`);
+      doc.moveDown();
     });
 
-    // Initialize coupon discount variables
-    let couponDiscount = 0;
-    let totalWithCoupon = priceAfterDiscount;
-
-    // Apply the coupon discount if a coupon is selected
-    if (selectedCouponId) {
-      const selectedCoupon = await Coupon.findById(selectedCouponId);
-
-      if (selectedCoupon) {
-        const couponDiscountAmount = Math.min(
-          (selectedCoupon.discount / 100) * priceAfterDiscount,
-          selectedCoupon.maxDiscountAmount
-        );
-
-        couponDiscount = couponDiscountAmount;
-        totalWithCoupon = priceAfterDiscount - couponDiscountAmount;
-      }
-    }
-
-    return res.status(200).json({
-      originalTotalPrice,
-      priceAfterDiscount,
-      savedTotal,
-      couponDiscount,       // Return coupon discount
-      totalWithCoupon,      // Return total price after applying coupon
-    });
+    doc.end();
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Something went wrong" });
+    console.error(error);
+    res.status(500).json({ message: "Failed to generate PDF report" });
   }
 };
 
-export { calculateCheckout };
+export const downloadSalesReportExcel = async (req, res) => {
+  try {
+    const { filter, fromDate, toDate } = req.query;
+    const { startDate, endDate } = calculateDateRange(filter, fromDate, toDate);
+    const report = await generateReport(startDate, endDate);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sales Report');
+
+    // Add summary
+    worksheet.addRow(['Summary']);
+    worksheet.addRow(['Total Revenue', report.summary.totalRevenue]);
+    worksheet.addRow(['Total Quantity', report.summary.totalQuantity]);
+    worksheet.addRow(['Total Orders', report.summary.totalOrders]);
+    worksheet.addRow([]);
+
+    // Add daily data
+    worksheet.addRow(['Daily Data']);
+    worksheet.addRow(['Date', 'Revenue', 'Quantity', 'Order Count']);
+    report.dailyData.forEach(day => {
+      worksheet.addRow([day.date, day.revenue, day.quantity, day.orderCount]);
+    });
+    worksheet.addRow([]);
+
+    // Add top products
+    worksheet.addRow(['Top Products']);
+    worksheet.addRow(['Product Name', 'Brand', 'Total Revenue', 'Total Quantity']);
+    report.topProducts.forEach(product => {
+      worksheet.addRow([product.productName, product.productBrand, product.totalRevenue, product.totalQuantity]);
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=sales_report.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to generate Excel report" });
+  }
+};
+
+// Helper function to calculate date range
+const calculateDateRange = (filter, fromDate, toDate) => {
+  // ... existing date range calculation logic ...
+};

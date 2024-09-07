@@ -8,6 +8,8 @@ import cartRouter from "./cartRoutes.js";
 import orderRouter from "./orderRoutes.js";
 import couponRouter from "./couponRoutes.js";
 import offerRouter from "./offerRoutes.js";
+import salesAndDetialsRouter from "./salesAndDetialsRoutes.js"
+
 const app = express.Router()
 
 app.use("/users", userRoute)
@@ -19,5 +21,6 @@ app.use("/wishList", wishListRoute)
 app.use("/order", orderRouter)
 app.use("/coupons", couponRouter)
 app.use("/offers", offerRouter)
+app.use("/salesAndDetials", salesAndDetialsRouter)
 
 export default app;   

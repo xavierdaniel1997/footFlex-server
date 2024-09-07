@@ -88,7 +88,6 @@ const getProducts = async (req, res) => {
       const categoryOffer = product.category?.offer?.discountPercentage || 0;
       const offerExpirationDate =
         product.offer?.endDate || product.category?.offer?.endDate;
-      // console.log("this is from the getproduct offerExpirationDate", offerExpirationDate)
       const priceDetails = calculateOfferPrice(
         product.salePrice,
         productOffer,
