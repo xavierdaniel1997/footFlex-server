@@ -24,9 +24,11 @@ const generateReport = async (startDate, endDate) => {
                 thumbnail: '$items.thumbnail',
                 productBrand: '$items.productBrand',
                 totalPrice: '$items.totalPrice',
+                finalPrice: '$items.finalPrice',
               },
               totalQuantity: { $sum: '$items.quantity' },                   
               totalRevenue: { $sum: '$items.totalPrice' },
+              // totalRevenue: { $sum: '$items.finalPrice' },
               orderCount: { $sum: 1 }
             }
           },
@@ -44,6 +46,7 @@ const generateReport = async (startDate, endDate) => {
                   quantity: '$totalQuantity',
                   revenue: '$totalRevenue',
                   totalPrice: '$_id.totalPrice',
+                  // finalPrice: '$_id.finalPrice',
                 }
               },                                
               dailyTotalRevenue: { $sum: '$totalRevenue' },
@@ -60,7 +63,7 @@ const generateReport = async (startDate, endDate) => {
     ]
 
     const result = await Order.aggregate(pipeline) 
-    console.log("this is frm the generate Report", result)   
+    // console.log("this is frm the generate Report", result)   
 
     return processReportResults(result)
 
@@ -72,49 +75,6 @@ const processReportResults = (result) => {
   let totalQuantity = 0;
   let totalOrders = 0;
   const productPerformance = {};
-
-  // const dailyData = result.map(day => {
-  //   totalRevenue += day.dailyTotalRevenue;
-  //   totalQuantity += day.dailyTotalQuantity;
-  //   totalOrders += day.dailyOrderCount;
-
-  //   day.products.forEach(product => {
-  //     if(!productPerformance[product.productId]) {
-  //       productPerformance[product.productId] = {
-  //         productId: product.productId,
-  //         productName: product.productName,
-  //         thumbnail: product.thumbnail,
-  //         productBrand: product.productBrand,
-  //         totalQuantity: 0,
-  //         totalRevenue: 0
-  //       }
-  //     }
-
-  //     productPerformance[product.productId].totalQuantity += product.quantity;
-  //     productPerformance[product.productId].totalRevenue += product.revenue;
-
-  //     return {
-  //       productId: product.productId,
-  //       productName: product.productName,
-  //       quantity: product.quantity,
-  //       revenue: product.revenue
-  //     };
-
-  //   });
-
-  //   return {
-  //     date: day._id,
-  //     revenue: day.dailyTotalRevenue,
-  //     quantity: day.dailyTotalQuantity,
-  //     orderCount: day.dailyOrderCount,
-  //     products: dailyProducts
-  //   };
-
-  // });
-  
-  // const topProducts = Object.values(productPerformance)
-  // .sort((a,b) => b.totalRevenue - a.totalRevenue)
-  // .slice(0, 10);
 
 
 
@@ -131,7 +91,8 @@ const processReportResults = (result) => {
                 productName: product.productName,
                 thumbnail: product.thumbnail,
                 productBrand: product.productBrand,
-                totalPrice: product.totalPrice,     
+                totalPrice: product.totalPrice,    
+                // finalPrice: product.finalPrice,  
                 totalQuantity: 0,
                 totalRevenue: 0,
                 dates: [] 

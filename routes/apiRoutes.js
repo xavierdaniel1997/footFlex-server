@@ -8,7 +8,9 @@ import cartRouter from "./cartRoutes.js";
 import orderRouter from "./orderRoutes.js";
 import couponRouter from "./couponRoutes.js";
 import offerRouter from "./offerRoutes.js";
-import salesAndDetialsRouter from "./salesAndDetialsRoutes.js"
+import salesAndDetialsRouter from "./salesAndDetialsRoutes.js";
+import dashboardRouter from "./dashboardRoutes.js";
+import walletRouter from "./walletRoutes.js"
 
 const app = express.Router()
 
@@ -22,5 +24,7 @@ app.use("/order", orderRouter)
 app.use("/coupons", couponRouter)
 app.use("/offers", offerRouter)
 app.use("/salesAndDetials", salesAndDetialsRouter)
+app.use("/dashboard", dashboardRouter)
+app.use("/wallet", walletRouter)
 
 export default app;   

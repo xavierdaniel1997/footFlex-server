@@ -3,10 +3,11 @@ import bcrypt from "bcrypt";
 import otpGenerator from "otp-generator";
 import nodemailer from "nodemailer";
 import OTP from "../models/otpModel.js";
-import {sendOTPByEmail} from "../utils/emailService.js";
+import {sendEmail, sendOTPByEmail} from "../utils/emailService.js";
 import {generateToken} from "../utils/genetateToken.js";
 import axios from "axios";
 import { client } from "../config/googleConfig.js";
+import crypto from "crypto";
 
 const registerUser = async (req, res) => {
   try {
@@ -197,6 +198,76 @@ const logOutUser = async (req, res) => {
   res.status(200).json({message: "logout successfully"});
 };
 
+
+const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await Users.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    user.resetPasswordExpires = Date.now() + 3600000; 
+
+    await user.save();
+
+    // const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    const message = `You requested a password reset. Click the following link to reset your password: ${resetUrl}`;
+    await sendEmail({
+      email: user.email,
+      subject: "Password Reset Request",
+      message,
+    });
+
+    return res.status(200).json({ message: "Password reset email sent" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error occurred", error });
+  }
+};
+
+
+
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password, cPassword } = req.body;
+
+    console.log("this is from the reset password", req.body, req.params)
+    if (!password || password !== cPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await Users.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined; 
+    user.resetPasswordExpires = undefined; 
+
+    await user.save();
+
+    return res.status(200).json({ message: "Password reset successfull" });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Error resetting password", error });
+  }
+};
+
+
+
 export {
   registerUser,
   verifyOTP,
@@ -205,4 +276,6 @@ export {
   logOutUser,
   verifyUser,
   googleLogin,
+  requestPasswordReset,
+  resetPassword
 };

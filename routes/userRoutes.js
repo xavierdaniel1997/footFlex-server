@@ -1,5 +1,5 @@
 import express from "express";
-import { googleLogin, loginUser, logOutUser, registerUser, resendOTP, verifyOTP, verifyUser } from "../controllers/authController.js";
+import { googleLogin, loginUser, logOutUser, registerUser, requestPasswordReset, resendOTP, resetPassword, verifyOTP, verifyUser } from "../controllers/authController.js";
 import { isAdminAuth, isAuth } from "../middleware/isAuth.js";
 import { addNewAddress, blockUser, deleteUser, getAddressDetials, getAllUser, getUserDetials, removeAddress, setDefaultAddress, updateAddress, updateUserDetials } from "../controllers/userController.js";
 
@@ -12,6 +12,8 @@ router.post("/login", loginUser)
 router.post("/logout", logOutUser)  
 router.get("/verify", isAuth, verifyUser)
 router.post("/google-login", googleLogin);
+router.post("/forgot-password", requestPasswordReset)
+router.post("/reset-password/:token", resetPassword)
 
 
 //user routes

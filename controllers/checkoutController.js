@@ -69,7 +69,7 @@ const calculateCheckout = async (req, res) => {
       finalPrice -= finalDiscountAmount;
       finalPrice = Math.max(finalPrice, 0);
       couponDiscount = finalDiscountAmount
-      cart.couponDiscount = couponDiscount;
+      cart.couponDiscount = 0;
 
     }
    

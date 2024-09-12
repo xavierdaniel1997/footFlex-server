@@ -23,9 +23,11 @@ const userSchema = mongoose.Schema(
       type: String,
       required: false,
     },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     addresses: [
       {
-        customerName : {
+        customerName: {
           type: String,
         },
         phone: {
@@ -53,14 +55,14 @@ const userSchema = mongoose.Schema(
         },
         typeofPlace: {
           type: String,
-          enum: ["home", "work"],    
+          enum: ["home", "work"],
           default: "home",
         },
         isDefaultAddress: {
           type: Boolean,
           default: false,
         },
-      },                                    
+      },
     ],
     password: {
       type: String,

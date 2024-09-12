@@ -41,12 +41,13 @@ const orderItemSchema = new Schema({
   cancelledAt: {type: Date},
   returnRequestedAt: {type: Date},
   returnedAt: {type: Date},
+  returnReason: {type: String},
 });
 
 const paymentSchema = new Schema({
   method: {
     type: String,
-    enum: ["Cash on Delivery", "Credit Card", "Debit Card", "UPI"],
+    enum: ["Cash on Delivery", "Credit Card", "Debit Card", "UPI", "Wallet"],
     required: true,
   },
   status: {
