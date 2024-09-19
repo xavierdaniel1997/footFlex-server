@@ -28,6 +28,12 @@ const cartSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    appliedCoupon: {
+        couponId: { type: mongoose.Schema.Types.ObjectId, ref: "Coupon" },
+        code: String,
+        discount: Number,
+        appliedAt: Date
+      }
 })
 
 const Cart = mongoose.model("Cart", cartSchema);

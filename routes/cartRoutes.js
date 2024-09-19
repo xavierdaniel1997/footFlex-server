@@ -14,6 +14,6 @@ router.delete("/clear-cart", isAuth, clearCart)
 router.get("/check-items", isAuth, checkCartItems)
 
 
-router.post("/checkout", isAuth, calculateCheckout)
+router.get("/checkout", isAuth, calculateCheckout)
 
 export default router;

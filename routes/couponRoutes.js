@@ -8,6 +8,6 @@ router.post("/create-coupon", isAuth, isAdminAuth, addCoupon)
 router.get("/get-all-coupons", isAuth, isAdminAuth, getCouponsAdmin)
 router.delete("/delete-coupon/:couponId", isAuth, isAdminAuth, deleteCoupon)
 router.get("/avlible-coupons", isAuth, getAvailableCoupons)
-router.post("/verify-coupon", isAuth, applyCoupon)
+router.post("/apply-coupon", isAuth, applyCoupon)
 
 export default router; 

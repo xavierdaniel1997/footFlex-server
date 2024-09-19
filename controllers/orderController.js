@@ -5,14 +5,15 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Wallet from "../models/walletModel.js";
 import Users from "../models/userModel.js";
+import PDFDocument from "pdfkit";
 
 const createOrder = async (req, res) => {
-  console.log("this is frm the createOrder", req.body);
   try {
     const {
       items,
       address,
       totalPrice,
+      deliveryCharge,
       originalTotalPrice,
       totalPriceAfterDiscount,
       savedTotal,
@@ -86,6 +87,7 @@ const createOrder = async (req, res) => {
       items: orderItems,
       address,
       totalPrice,
+      deliveryCharge,
       originalTotalPrice,
       totalPriceAfterDiscount,
       savedTotal,
@@ -110,6 +112,8 @@ const createOrder = async (req, res) => {
     return res.status(500).json({message: "Failed to create order"});
   }
 };
+
+
 
 const razorpay = new Razorpay({
   key_id: process.env.RZP_KEY_ID,
@@ -148,7 +152,25 @@ const createRazorpayOrder = async (req, res) => {
     .digest("hex");
 
   if (generatedSignature !== razorpaySignature) {
-    return res.status(400).json({message: "Invalid payment signature"});
+    try {
+      const newOrder = new Order({
+        user: userId,
+        ...orderData,
+        payment: {
+          method: "UPI",
+          status: "Failed", 
+          razorpayOrderId,
+        },
+        status: "Payment Pending",
+      });
+
+      console.log("from the failed payment", newOrder);
+      const savedOrder = await newOrder.save();
+      return res.status(200).json({ message: "Order created, payment pending", order: savedOrder });
+    } catch (error) {
+      console.error("Error saving order:", error);
+      return res.status(500).json({ message: "Failed to save order" });
+    }
   }
 
   try {
@@ -186,6 +208,91 @@ const createRazorpayOrder = async (req, res) => {
     res.status(500).json({message: "Failed to save order"});
   }
 };
+
+const handlePaymentFailure = async (req, res) => {
+  console.log("this is from the payment failer",req.body)
+  const userId = req.user.id;
+  const { razorpayOrderId, razorpayPaymentId, errorDetails, orderData } = req.body;
+
+  try {
+    const failedOrder = new Order({
+      user: userId,
+      ...orderData,
+      payment: {
+        method: "UPI",
+        status: "Failed", 
+        razorpayOrderId,
+        razorpayPaymentId,
+        errorDetails, 
+      },
+      status: "Payment Failed", 
+    });
+
+    const savedOrder = await failedOrder.save();
+
+    await Cart.findOneAndUpdate(
+      { user: userId },
+      { $set: { items: [] } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: "Order created with payment failure",
+      order: savedOrder,
+    });
+  } catch (error) {
+    console.error("Error saving failed order:", error);
+    res.status(500).json({ message: "Failed to save order after payment failure" });
+  }
+};
+
+const retryPayment = async (req, res) => {
+  try {
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RZP_SECRET_KEY)
+      .update(razorpayOrderId + "|" + razorpayPaymentId)
+      .digest("hex");
+
+    if (generatedSignature !== razorpaySignature) {
+      return res.status(400).json({ message: "Invalid payment signature" });
+    }
+
+    order.status = "Processing";
+    order.payment = {
+      method: "UPI",
+      status: "Completed",
+      razorpayOrderId,
+      razorpayPaymentId,
+    };
+
+    await order.save();
+
+    for (const item of order.items) {
+      const product = await Products.findById(item.product);
+      if (product) {
+        product.stock -= item.quantity;
+        const sizeIndex = product.sizes.findIndex((s) => s.size === item.size);
+        if (sizeIndex !== -1) {
+          product.sizes[sizeIndex].stock -= item.quantity;
+        }
+        await product.save();
+      }
+    }
+
+    res.status(200).json({ message: "Payment successful", order });
+  } catch (error) {
+    console.error("Error retrying payment:", error);
+    res.status(500).json({ message: "Failed to process payment" });
+  }
+};
+
 
 // get order for user
 const userOrders = async (req, res) => {
@@ -305,7 +412,6 @@ const updateOrderItemStatus = async (req, res) => {
       return res.status(404).json({message: "Order item not found"});
     }
 
-    // console.log("this is from the updateOrderItemStatus orderItem", orderItem)
     const {quantity, size, price} = orderItem;
 
     const update = {
@@ -341,17 +447,15 @@ const updateOrderItemStatus = async (req, res) => {
       {new: true}
     );
 
-    if (status === "Cancelled") {
+    if (status === "Cancelled" || status === "Return Accepted") {
       const product = await Products.findById(productId);
-      // console.log("this is from the updateOrderItemStatus product", product)
       if (!product) {
         return res.status(404).json({message: "Product not found"});
       }
 
       product.stock += quantity;
 
-      const sizeIndex = product.sizes.findIndex((s) => s.size === size);
-      // console.log("this is from the updateOrderItemStatus sizeIndes", sizeIndex)
+      const sizeIndex = product.sizes.findIndex((s) => s.size === size)
       if (sizeIndex === -1) {
         return {status: 404, message: "Size not found"};
       }
@@ -513,6 +617,114 @@ const returnOrder = async (req, res) => {
   }
 };
 
+
+const getOrderFullDetial = async (req, res) => {
+  try {
+    const {orderId} = req.params;
+
+    const order = await Order.findById(orderId)
+    .populate({
+      path: 'user',
+      select: '-password'
+    })
+    .populate('items.product')
+    .exec();
+
+    if (!order) {
+      return res.status(404).json({message: "Order not found"});
+    }
+
+    return res.status(200).json({message: "Success", order});
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({message: "Something went wrong"});
+  }
+};
+
+
+
+const downloadInvoice = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId).populate('user items.product').select("-password").exec();
+
+    const doc = new PDFDocument({ margin: 50, size: "A4" });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=invoice_${order._id}.pdf`);
+
+    doc.pipe(res);
+
+    doc.fontSize(20).text("FOOTFLEX", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(16).text(`Invoice #${order._id}`, { align: "center" });
+    doc.moveDown();
+
+    doc.fontSize(12).text("Customer Details:", { underline: true });
+    doc.text(`Name: ${order.user.firstName} ${order.user.lastName}`);
+    doc.text(`Email: ${order.user.email}`);
+    doc.text(`Phone: ${order.user.phoneNumber}`);
+    doc.moveDown();
+
+    doc.text("Shipping Address:", { underline: true });
+    doc.text(`${order.address.customerName}`);
+    doc.text(`${order.address.address}, ${order.address.locality}, ${order.address.city}`);
+    doc.text(`${order.address.state} - ${order.address.pinCode}`);
+    doc.text(`Type of Place: ${order.address.typeofPlace}`);
+    doc.moveDown();
+
+    doc.fontSize(12).text("Order Summary:", { underline: true });
+    doc.text(`Total Price: Rs: ${order.totalPrice}`);
+    doc.text(`Discount: Rs: ${order.couponDiscount || 0}`);
+    doc.text(`Final Price: Rs: ${order.finalPrice}`);
+    doc.text(`Delivery Charge: Rs: ${order.deliveryCharge}`);
+    doc.text(`Payment Method: ${order.payment.method}`);
+    doc.text(`Payment Status: ${order.payment.status}`);
+    doc.moveDown();
+
+
+    const tableHeaders = ["Product Name", "Brand", "Quantity", "Price (INR)"];
+    const columnWidths = [200, 100, 100, 100];  
+
+    let startY = doc.y + 20;
+
+    doc.fontSize(12).font('Helvetica-Bold');
+
+    tableHeaders.forEach((header, i) => {
+      doc.text(header, 50 + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), startY, {
+        width: columnWidths[i],
+        align: i === 3 ? 'right' : 'left' 
+      });
+    });
+
+    doc.font('Helvetica');
+    order.items.forEach((item, rowIndex) => {
+      startY += 20;
+      const row = [
+        item.productName,
+        item.productBrand,
+        item.quantity.toString(),
+        `Rs: ${item.totalPrice}`
+      ];
+
+      row.forEach((cell, cellIndex) => {
+        doc.text(cell, 50 + columnWidths.slice(0, cellIndex).reduce((a, b) => a + b, 0), startY, {
+          width: columnWidths[cellIndex],
+          align: cellIndex === 3 ? 'right' : 'left'  
+        });
+      });
+    });
+
+    doc.moveDown(2);
+    doc.end();
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
 export {
   createOrder,
   userOrders,
@@ -524,4 +736,8 @@ export {
   verifyRazorpayPayment,
   cancelOrder,
   returnOrder,
+  downloadInvoice,
+  getOrderFullDetial,
+  handlePaymentFailure,
+  retryPayment,
 };

@@ -1,3 +1,5 @@
+import Brands from "../models/brandModel.js";
+import Category from "../models/categoryModel.js";
 import Products from "../models/productModel.js";
 import {calculateOfferPrice} from "../utils/calculateOfferPrice.js";
 import {uploadImage, uploadMultipleImages} from "../utils/imageUploadUtil.js";
@@ -266,7 +268,19 @@ const updateProduct = async (req, res) => {
       (product.sizes = sizes || product.sizes),
       (product.status = status !== undefined ? status : product.status);
 
-    if (thumbnail) {
+
+      const isCloudinaryUrl = (url) => url.startsWith("https://res.cloudinary.com");
+
+    // if (thumbnail) {
+    //   product.thumbnail = await uploadImage(
+    //     thumbnail,
+    //     "myProducts/thumbnail",
+    //     600,
+    //     600
+    //   );
+    // }
+
+    if (thumbnail && !isCloudinaryUrl(thumbnail)) {
       product.thumbnail = await uploadImage(
         thumbnail,
         "myProducts/thumbnail",
@@ -283,7 +297,6 @@ const updateProduct = async (req, res) => {
           600,
           600
         );
-        // console.log("Uploaded images:", uploadedImages);
         product.gallery = uploadedImages;
       } catch (error) {
         console.error("Error uploading gallery images:", error);
@@ -292,6 +305,9 @@ const updateProduct = async (req, res) => {
           .json({message: "Error uploading gallery images"});
       }
     }
+
+    
+
 
     const updatedProduct = await product.save();
     return res
@@ -350,6 +366,49 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const searchProduct = async (req, res) => {
+  try{
+    const { query } = req.query;
+
+    let searchItem = {};
+
+    const brands = await Brands.find({ brandName: { $regex: query, $options: "i" } });
+    const brandIds = brands.map(brand => brand._id);
+
+    const categories = await Category.find({ categoryName: { $regex: query, $options: "i" } });
+    const categoryIds = categories.map(category => category._id);
+
+    if(query){
+      searchItem = {
+        $or: [
+          {productName: {$regex: query, $options: "i"}},
+          {description: {$regex: query, $options: "i"}},
+          { brand: { $in: brandIds } },
+          { category: { $in: categoryIds } }
+        ]
+      }
+    }
+
+    const products = await Products.find(searchItem).populate("category")
+    .populate("brand")
+    .populate("offer")
+    .populate({
+      path: "category",
+      populate: {path: "offer"},
+    })
+  
+
+    return res.status(200).json({message: "Success", products})
+  }catch(error){
+    console.log(error)
+    return res.status(500).json({message: "Failed"})
+  }
+}
+
+
+
+
+
 export {
   createProduct,
   getProducts,
@@ -360,4 +419,5 @@ export {
   blockProduct,
   getProductByGender,
   getAllProducts,
+  searchProduct
 };

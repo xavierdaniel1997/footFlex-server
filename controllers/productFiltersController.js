@@ -6,7 +6,7 @@ import { calculateOfferPrice } from '../utils/calculateOfferPrice.js';
 const getFilteredProducts = async (req, res) => {
   // console.log("this is frm the getFilteredProducts", req.query)  
   try {
-    const { gender, brands, categories, prices, sort } = req.query;
+    const { gender, brands, categories, prices, sort, search } = req.query;
 
     let query = {};
 
@@ -27,6 +27,18 @@ const getFilteredProducts = async (req, res) => {
     }
 
 
+    if (search) {
+      const brandIds = await mongoose.model('Brands').find({ brandName: { $regex: search, $options: 'i' } }).select('_id');
+      const categoryIds = await mongoose.model('Category').find({ categoryName: { $regex: search, $options: 'i' } }).select('_id');
+
+      query.$or = [
+        { productName: { $regex: search, $options: 'i' } }, 
+        { description: { $regex: search, $options: 'i' } }, 
+        { brand: { $in: brandIds } }, 
+        { category: { $in: categoryIds } }, 
+      ];
+    }
+
 
     let sortOption = {};
     if (sort === 'High to Low') {
@@ -43,7 +55,6 @@ const getFilteredProducts = async (req, res) => {
     }
 
 
-    console.log("query", query)
     const filteredProducts = await Products.find(query)
       .populate('category brand')
       .populate("offer")

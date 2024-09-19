@@ -81,47 +81,7 @@ const downloadSalesReport = async (req, res) => {
     const report = await generateReport(startDate, endDate);
 
     if (format === "pdf") {
-      // const doc = new PDFDocument();
-      // res.setHeader("Content-Type", "application/pdf");
-      // res.setHeader(
-      //   "Content-Disposition",
-      //   "attachment; filename=sales_report.pdf"
-      // );   
-   
-      // doc.pipe(res);
 
-      // doc.fontSize(18).text("Sales Report", {align: "center"});
-      // doc.moveDown();
-
-      // doc.fontSize(14).text("Summary");
-      // doc
-      //   .fontSize(12)
-      //   .text(`Total Revenue: $${report.summary.totalRevenue.toFixed(2)}`);
-      // doc.text(`Total Quantity: ${report.summary.totalQuantity}`);
-      // doc.text(`Total Orders: ${report.summary.totalOrders}`);
-      // doc.moveDown();
-
-      // doc.fontSize(14).text("Daily Data");
-      // report.dailyData.forEach((day) => {
-      //   doc.fontSize(12).text(`Date: ${day.date}`);
-      //   doc.text(`Revenue: $${day.revenue.toFixed(2)}`);
-      //   doc.text(`Quantity: ${day.quantity}`);
-      //   doc.text(`Order Count: ${day.orderCount}`);
-      //   doc.moveDown();
-      // });
-
-      // doc.fontSize(14).text("Top Products");
-      // report.topProducts.forEach((product) => {
-      //   doc.fontSize(12).text(`Product: ${product.productName}`);
-      //   doc.text(`Brand: ${product.productBrand}`);
-      //   doc.text(`Total Revenue: $${product.totalRevenue.toFixed(2)}`);
-      //   doc.text(`Total Quantity: ${product.totalQuantity}`);
-      //   doc.moveDown();
-      // });
-
-      // doc.end();
-
-  
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
       res.setHeader("Content-Type", "application/pdf");

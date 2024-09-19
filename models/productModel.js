@@ -49,7 +49,7 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     gallery: [
-      {
+      { 
         type: String,
       },
     ],

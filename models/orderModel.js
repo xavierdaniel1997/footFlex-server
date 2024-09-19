@@ -69,6 +69,7 @@ const orderSchema = new Schema(
     originalTotalPrice: {type: Number},
     totalPriceAfterDiscount: {type: Number},
     savedTotal: {type: Number},
+    deliveryCharge: {type: Number},
     couponDiscount: {type: Number, default: 0},
     finalPrice: {type: Number},
 
@@ -76,6 +77,7 @@ const orderSchema = new Schema(
     status: {
       type: String,
       enum: [
+        "Payment Failed",
         "Pending",
         "Processing",
         "Shipped",

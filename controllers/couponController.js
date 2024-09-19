@@ -1,7 +1,9 @@
+import Cart from "../models/cartModel.js";
 import Coupon from "../models/couponModel.js";
+import {calculateOfferPrice} from "../utils/calculateOfferPrice.js";
 
 const addCoupon = async (req, res) => {
-    console.log(req.body)
+  console.log(req.body);
   try {
     const {
       couponName,
@@ -11,8 +13,8 @@ const addCoupon = async (req, res) => {
       maxDiscountAmount,
       startDate,
       endDate,
-      status,  
-      description
+      status,
+      description,
     } = req.body;
 
     if (
@@ -33,18 +35,18 @@ const addCoupon = async (req, res) => {
     }
 
     const coupons = new Coupon({
-        couponName,
-        couponCode,
-        discount,
-        minPurchaseAmount,
-        maxDiscountAmount,
-        startDate,
-        endDate,
-        status,
-        description,
-      });
+      couponName,
+      couponCode,
+      discount,
+      minPurchaseAmount,
+      maxDiscountAmount,
+      startDate,
+      endDate,
+      status,
+      description,
+    });
 
-      await coupons.save()
+    await coupons.save();
     return res.status(200).json({message: "coupon added Succesfully", coupons});
   } catch (error) {
     console.log(error);
@@ -52,66 +54,151 @@ const addCoupon = async (req, res) => {
   }
 };
 
-
 const getCouponsAdmin = async (req, res) => {
-    try{
-        const coupons = await Coupon.find()
-        return res.status(200).json({message: "Success", coupons})
-    }catch(error){
-        console.log(error)
-        return res.status(200).json({message: "Something went wrog"})
-    }
-}
+  try {
+    const coupons = await Coupon.find();
+    return res.status(200).json({message: "Success", coupons});
+  } catch (error) {
+    console.log(error);
+    return res.status(200).json({message: "Something went wrog"});
+  }
+};
 
 const deleteCoupon = async (req, res) => {
-    try{
-        const {couponId} = req.params;
-        await Coupon.findByIdAndDelete(couponId)
-        return res.status(200).json({message: "Delete Successfully"})
-    }catch(error){
-        console.log(error)
-        return res.status(200).json({message: "Something went wrog"})
-    }
-}
-
+  try {
+    const {couponId} = req.params;
+    await Coupon.findByIdAndDelete(couponId);
+    return res.status(200).json({message: "Delete Successfully"});
+  } catch (error) {
+    console.log(error);
+    return res.status(200).json({message: "Something went wrog"});
+  }
+};
 
 const getAvailableCoupons = async (req, res) => {
-  try{
+  try {
     const userId = req.user.id;
-    const { totalPrice } = req.query; 
+    const {totalPrice} = req.query;
 
     if (!totalPrice) {
-      return res.status(400).json({ message: "Total price is required" });
+      return res.status(400).json({message: "Total price is required"});
     }
 
     const availableCoupons = await Coupon.find({
-      minPurchaseAmount: { $lte: totalPrice },
+      minPurchaseAmount: {$lte: totalPrice},
       // startDate: { $lte: new Date() },
-      endDate: { $gte: new Date() },
+      endDate: {$gte: new Date()},
       status: true,
-      usedBy: { $ne: userId },
-    })
+      usedBy: {$ne: userId},
+    });
 
     if (!availableCoupons.length) {
-      return res.status(404).json({ message: "No coupons available" });
+      return res.status(404).json({message: "No coupons available"});
     }
 
-    return res.status(200).json({ message: "Coupons found", coupons: availableCoupons });
-    
-  }catch(error){
+    return res
+      .status(200)
+      .json({message: "Coupons found", coupons: availableCoupons});
+  } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Failed to retrieve coupons" });
+    return res.status(500).json({message: "Failed to retrieve coupons"});
   }
-}
-
+};
 
 const applyCoupon = async (req, res) => {
-  try{
-    return res.status(200).json({ message: "Coupons apply successfully"});
-  }catch(error){
-    console.log(error)
-    return res.status(500).json({ message: "Failed to applay coupons" });
-  }
-}
+  try {
+    const {couponId} = req.body;
+    const userId = req.user.id;
 
-export {addCoupon, getCouponsAdmin, deleteCoupon, getAvailableCoupons, applyCoupon};
+    const coupon = await Coupon.findById(couponId);
+    if (
+      !coupon ||
+      !coupon.status ||
+      new Date() < coupon.startDate ||
+      new Date() > coupon.endDate
+    ) {
+      return res.status(400).json({message: "Invalid or expired coupon"});
+    }
+
+    const cart = await Cart.findOne({user: userId}).populate({
+      path: "items.productId",
+      populate: [
+        {path: "brand"},
+        {path: "offer"},
+        {
+          path: "category",
+          model: "Category",
+          populate: {
+            path: "offer",
+            model: "Offer",
+          },
+        },
+      ],
+    });
+
+    if (!cart) {
+      return res.status(400).json({message: "Cart not found"});
+    }
+
+    let totalPriceAfterDiscount = 0;
+
+    cart.items.forEach((item) => {
+      const product = item.productId;
+      const productOffer = product?.offer?.discountPercentage || 0;
+      const categoryOffer = product?.category?.offer?.discountPercentage || 0;
+      const offerExpirationDate =
+        product?.offer?.endDate || product?.category?.offer?.endDate;
+
+      const priceDetails = calculateOfferPrice(
+        product.salePrice,
+        productOffer,
+        categoryOffer,
+        offerExpirationDate
+      );
+
+      totalPriceAfterDiscount +=
+        (priceDetails.discountedPrice || product.salePrice) * item.quantity;
+    });
+
+    if (totalPriceAfterDiscount < coupon.minPurchaseAmount) {
+      return res
+        .status(400)
+        .json({
+          message: `Minimum purchase amount of ${coupon.minPurchaseAmount} not met`,
+        });
+    }
+
+    const discountAmount = (totalPriceAfterDiscount * coupon.discount) / 100;
+    const finalDiscountAmount = Math.min(
+      discountAmount,
+      coupon.maxDiscountAmount
+    );
+
+    cart.appliedCoupon = {
+      couponId: coupon._id,
+      code: coupon.couponCode,
+      discount: finalDiscountAmount,
+      appliedAt: new Date(),
+    };
+
+    await cart.save();
+
+    return res
+      .status(200)
+      .json({
+        message: "Coupon applied successfully",
+        appliedCoupon: cart.appliedCoupon,
+      });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({message: "Failed to applay coupons"});
+  }
+};
+
+export {
+  addCoupon,
+  getCouponsAdmin,
+  deleteCoupon,
+  getAvailableCoupons,
+  applyCoupon,
+};
