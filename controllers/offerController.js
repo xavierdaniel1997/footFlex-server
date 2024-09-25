@@ -33,7 +33,29 @@ const createOffer = async (req, res) => {
       await Products.findByIdAndUpdate(targetOfferId, {offer: offer._id});
     }
 
-    return res.status(201).json({message: "Offer created successfully", offer});
+    let populatedOffer;
+    if (offerType === "Category") {
+      populatedOffer = await Offer.findById(offer._id)
+        .populate({
+          path: "targetOfferId",
+          select: "categoryName description",
+          model: "Category",
+        })
+        .exec();
+    } else if (offerType === "Products") {
+      populatedOffer = await Offer.findById(offer._id)
+        .populate({
+          path: "targetOfferId",
+          select: "productName description price thumbnail",
+          model: "Products",
+        })
+        .exec();
+    }
+
+    return res.status(201).json({
+      message: "Offer created successfully",
+      offer: populatedOffer,
+    });
   } catch (error) {
     console.log(error);
     return res.status(400).json({message: "Failed to create the offer"});
@@ -56,7 +78,7 @@ const getOffers = async (req, res) => {
 
     const productOffersPromise = Offer.find({
       offerType: "Products",
-      // endDate: {$gte: currentDate}, 
+      // endDate: {$gte: currentDate},
     })
       .populate({
         path: "targetOfferId",
@@ -82,4 +104,28 @@ const getOffers = async (req, res) => {
   }
 };
 
-export {createOffer, getOffers};
+const deleteOffer = async (req, res) => {
+  try {
+    const {offerId} = req.params;
+
+    const offer = await Offer.findById(offerId);
+    if (!offer) {
+      return res.status(404).json({message: "Offer not found"});
+    }
+
+    if (offer.offerType === "Category") {
+      await Category.findByIdAndUpdate(offer.targetOfferId, {offer: null});
+    } else if (offer.offerType === "Products") {
+      await Products.findByIdAndUpdate(offer.targetOfferId, {offer: null});
+    }
+
+    await Offer.findByIdAndDelete(offerId);
+
+    return res.status(200).json({message: "Offer deleted successfully"});
+  } catch (error) {
+    console.error("Error deleting offer:", error);
+    return res.status(500).json({message: "Failed to delete the offer"});
+  }
+};
+
+export {createOffer, getOffers, deleteOffer};

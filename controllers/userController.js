@@ -3,7 +3,7 @@ import Category from "../models/categoryModel.js";
 import Users from "../models/userModel.js";
 import {uploadImage} from "../utils/imageUploadUtil.js";
 
-const getUserDetials = async (req, res) => {
+const getUserDetials = async (req, res) => { 
   try {
     const userId = req.user;
     const userData = await Users.findById(userId.id).select("-password");
@@ -23,11 +23,29 @@ const getAllUser = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const totalCount = await Users.countDocuments({role: false});
-    const users = await Users.find({role: false})
+    const searchQuery = req.query.search || '';
+    const searchFilter = {
+      role: false,
+      $or: [
+        { firstName: { $regex: searchQuery, $options: 'i' } },
+        { lastName: { $regex: searchQuery, $options: 'i' } },
+        { email: { $regex: searchQuery, $options: 'i' } },
+      ],
+    };
+
+    // const totalCount = await Users.countDocuments({role: false});
+    // const users = await Users.find({role: false})
+    //   .select("-password")
+    //   .skip(skip)
+    //   .limit(limit);
+
+    const totalCount = await Users.countDocuments(searchFilter);
+    const users = await Users.find(searchFilter)
       .select("-password")
       .skip(skip)
       .limit(limit);
+
+
     return res.status(200).json({
       message: "fetch user detials successfully",
       users: users,

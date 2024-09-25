@@ -115,19 +115,46 @@ const getProductsToAdmin = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const totalCount = await Products.countDocuments({});
-    const products = await Products.find({})
+    const searchQuery = req.query.search || "";
+
+    // const totalCount = await Products.countDocuments({});
+    // const products = await Products.find({})
+    //   .populate("category")
+    //   .populate("brand")
+    //   .populate({
+    //     path: "category",
+    //     populate: {path: "offer"},
+    //   })
+    //   .sort({
+    //     createdAt: -1,
+    //   })
+    //   .skip(skip)
+    //   .limit(limit);
+
+
+    const searchFilter = searchQuery
+      ? {
+          $or: [
+            { productName: { $regex: searchQuery, $options: "i" } },
+            { description: { $regex: searchQuery, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const totalCount = await Products.countDocuments(searchFilter);
+
+    const products = await Products.find(searchFilter)
       .populate("category")
       .populate("brand")
       .populate({
         path: "category",
-        populate: {path: "offer"},
+        populate: { path: "offer" },
       })
-      .sort({
-        createdAt: -1,
-      })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+
     return res.status(200).json({
       message: "Success",
       products: products,

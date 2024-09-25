@@ -195,10 +195,36 @@ const applyCoupon = async (req, res) => {
   }
 };
 
+const removeCoupon = async (req, res) => {
+  try{
+
+    const userId = req.user.id;
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return res.status(400).json({ message: "Cart not found" });
+    }
+
+    if (!cart.appliedCoupon || !cart.appliedCoupon.couponId) {
+      return res.status(400).json({ message: "No coupon applied to the cart" });
+    }
+
+    cart.appliedCoupon = null;
+
+    await cart.save();
+ 
+
+    return res.status(200).json({message: "Success", cart})
+  }catch(error){
+    console.log(error)
+    return res.status(500).json({message: "Failed to remove coupons"})
+  }
+}
+
 export {
-  addCoupon,
+  addCoupon, 
   getCouponsAdmin,
   deleteCoupon,
   getAvailableCoupons,
   applyCoupon,
+  removeCoupon,
 };
