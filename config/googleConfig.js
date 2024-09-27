@@ -6,5 +6,5 @@ dotenv.config()
 export const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    "http://localhost:3000"
+    "https://footflex-client.vercel.app/"
 )
