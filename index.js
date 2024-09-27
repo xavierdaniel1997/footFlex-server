@@ -13,7 +13,7 @@ connectDB()
 
 const allowedOrigins = process.env.CLIENT_ORIGINS
   ? process.env.CLIENT_ORIGINS.split(',')
-  : ['https://footflex-client.vercel.app/'];
+  : ['https://footflex-client.vercel.app'];
 
 console.log("Allowed Origins: ", allowedOrigins);
 
