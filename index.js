@@ -10,10 +10,17 @@ const app = express();
 const PORT = 8000;
 dotenv.config()
 connectDB()
-app.use(cors({ 
-    origin: process.env.CLIENT_ORIGIN || "*",
-    credentials: true
-  }));
+
+const allowedOrigins = process.env.CLIENT_ORIGINS
+  ? process.env.CLIENT_ORIGINS.split(',')
+  : ['http://localhost:3000'];
+
+console.log("Allowed Origins: ", allowedOrigins);
+
+app.use(cors({
+    origin : allowedOrigins,
+    credentials : true,
+}))
   
 
 app.use(express.json({ limit: '10mb' })); 
