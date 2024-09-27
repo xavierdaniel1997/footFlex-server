@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 
 const isAuth = (req, res, next) => {
     const token = req.cookies.jwtToken;
+    console.log("this is the token from the isAuth", token)
     if(!token){
         return res.status(401).json({ message: "No token provided, authorization denied" });
     }
@@ -9,6 +10,7 @@ const isAuth = (req, res, next) => {
     try{
         const decoded = jwt.verify(token, process.env.SECRET_KEY)
         req.user = decoded
+        console.log("form the isAuth req.user", req.user)
         next()
     }catch(error){
         return res.status(401).json({ message: "Token is not valid" });
