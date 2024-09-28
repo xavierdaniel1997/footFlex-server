@@ -1,3 +1,5 @@
+// index.js
+
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -15,12 +17,12 @@ app.use(cookieParser())
 
 const allowedOrigins = process.env.CLIENT_ORIGINS
   ? process.env.CLIENT_ORIGINS.split(',')
-  : ['https://footflex-client.vercel.app'];
+  : ['https://footflex-client.vercel.app', "*"];
 
 console.log("Allowed Origins: ", allowedOrigins);
 
 app.use(cors({
-    origin : allowedOrigins,
+    origin : process.env.CLIENT_ORIGINS,
     credentials : true,
 }))
   
