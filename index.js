@@ -19,10 +19,10 @@ const allowedOrigins = process.env.CLIENT_ORIGINS
   ? process.env.CLIENT_ORIGINS.split(',')
   : ['https://footflex-client.vercel.app', "*"];
 
-console.log("Allowed Origins: ", allowedOrigins);
+console.log("Allowed Origins: ", process.env.CLIENT_ORIGINS);
 
 app.use(cors({
-    origin : process.env.CLIENT_ORIGINS,
+    origin : "https://footflex-client.vercel.app",
     credentials : true,
 }))
   
