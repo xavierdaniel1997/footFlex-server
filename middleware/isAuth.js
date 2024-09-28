@@ -1,9 +1,12 @@
 import jwt from "jsonwebtoken"; 
 
 const isAuth = (req, res, next) => {
-    console.log("this is the req of the isAuth", req)
+    console.log("Incoming cookies: ", req.cookies); 
+    
     const token = req.cookies.jwtToken;
-    console.log("this is the token from the isAuth", token)
+    
+    console.log("JWT Token from cookies: ", token);
+
     if(!token){
         return res.status(401).json({ message: "No token provided, authorization denied" });
     }
