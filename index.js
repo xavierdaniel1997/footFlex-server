@@ -17,14 +17,15 @@ app.use(cookieParser())
 
 const allowedOrigins = process.env.CLIENT_ORIGINS
   ? process.env.CLIENT_ORIGINS.split(',')
-  : ['https://footflex-client.vercel.app', "*"];
+  : ['https://www.footflexonline.shop', "*"];
 
 console.log("Allowed Origins: ", process.env.CLIENT_ORIGINS);
 
 app.use(cors({
-    origin : "https://footflex-client.vercel.app",
+    origin : "https://www.footflexonline.shop",
     credentials : true,
 }))
+
   
 
 app.use(express.json({ limit: '10mb' })); 
