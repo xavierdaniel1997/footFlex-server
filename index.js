@@ -21,8 +21,13 @@ const allowedOrigins = process.env.CLIENT_ORIGINS
 
 console.log("Allowed Origins: ", process.env.CLIENT_ORIGINS);
 
+// app.use(cors({
+//     origin : "https://www.footflexonline.shop",
+//     credentials : true,
+// }))
+
 app.use(cors({
-    origin : "https://www.footflexonline.shop",
+    origin : "http://localhost:3000",
     credentials : true,
 }))
 
