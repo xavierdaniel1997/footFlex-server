@@ -148,6 +148,7 @@ const googleLogin = async (req, res) => {
       { headers: { Authorization: `Bearer ${tokens.access_token}` } }
     );
 
+  
     const { email, given_name, family_name } = googleUser.data;
 
     let user = await Users.findOne({ email });
@@ -177,7 +178,7 @@ const googleLogin = async (req, res) => {
 };            
 
 const verifyUser = async (req, res) => {
-  try {
+  try {   
     const userId = req.user;
     const userData = await Users.findById(userId.id).select("-password");
     if (!userData) {

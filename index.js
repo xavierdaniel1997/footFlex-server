@@ -19,7 +19,6 @@ const allowedOrigins = process.env.CLIENT_ORIGINS
   ? process.env.CLIENT_ORIGINS.split(',')
   : ['https://www.footflexonline.shop', "*"];
 
-console.log("Allowed Origins: ", process.env.CLIENT_ORIGINS);
 
 // app.use(cors({
 //     origin : "https://www.footflexonline.shop",
