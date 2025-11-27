@@ -16,9 +16,9 @@ connectDB()
 app.use(cookieParser())
 
 const allowedOrigins = process.env.CLIENT_ORIGINS
-  ? process.env.CLIENT_ORIGINS.split(',')
-  : ['http://localhost:3000', 'https://footflex-client-kappa.vercel.app', "*"];
 
+//   ? process.env.CLIENT_ORIGINS.split(',')
+//   : ['http://localhost:3000', 'https://footflex-client-kappa.vercel.app', "*"];
 
 
 
