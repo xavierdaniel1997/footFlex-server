@@ -15,16 +15,12 @@ connectDB()
 
 app.use(cookieParser())
 
+
 const allowedOrigins = process.env.CLIENT_ORIGINS
-
-//   ? process.env.CLIENT_ORIGINS.split(',')
-//   : ['http://localhost:3000', 'https://footflex-client-kappa.vercel.app', "*"];
-
-
-
 app.use(cors({
     origin : allowedOrigins,
-    credentials : true,
+    credentials : true,                
+    allowedHeaders: ["Content-Type", "Authorization"]
 }))
 
   
