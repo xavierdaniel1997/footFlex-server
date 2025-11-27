@@ -17,16 +17,13 @@ app.use(cookieParser())
 
 const allowedOrigins = process.env.CLIENT_ORIGINS
   ? process.env.CLIENT_ORIGINS.split(',')
-  : ['https://www.footflexonline.shop', "*"];
+  : ['http://localhost:3000', 'https://footflex-client-kappa.vercel.app', "*"];
 
 
-// app.use(cors({
-//     origin : "https://www.footflexonline.shop",
-//     credentials : true,
-// }))
+
 
 app.use(cors({
-    origin : "http://localhost:3000",
+    origin : allowedOrigins,
     credentials : true,
 }))
 
